@@ -206,18 +206,21 @@ def matcher_aux_v2(s, re, s_idx, re_idx, s_len, re_len, match_report):
 
 def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
     saved_s_idx = s_idx
+    print(f"re: {re}")
     while re_idx < re_len:
         cur_re = re[re_idx]
         cur_re_type = cur_re[0]
         cur_re_expr = cur_re[1]
         match cur_re_type:
             case 'literal':
+                print('begin literal match')
                 if s_idx >= s_len:
                     return (False, s_idx, s_idx)
                 cur_char = s[s_idx]
                 if cur_char == cur_re_expr:
                     s_idx += 1
                     re_idx += 1
+                    print(f"literal match success {cur_char}")
                 else:
                     return (False, s_idx, s_idx)
             case 'union':
@@ -233,7 +236,17 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                     s_idx = max_end_idx + 1
                     re_idx += 1
                 else:
-                    return (False, saved_s_idx, max_end_idx)                
+                    return (False, saved_s_idx, max_end_idx)
+            case 'star':
+                print("begin star match")
+                found, start, end = matcher_aux(s, cur_re_expr, s_idx, 0, s_len, len(cur_re_expr), mr)                
+                if found:
+                    s_idx = end + 1
+                    # try to match the same RE again
+                else:
+                    re_idx += 1
+                    # match failed, move on to the next RE starting from where you were
+                    # prior to trying to match the *-expr
             case _:
                 print("Whoops NYI")
                 return (False, 999, 999)
@@ -270,10 +283,16 @@ re7 = (('literal', 'd'), ('literal', 'f'), ('literal', 'a'), ('literal', 'g'))
 re8 = (('union',
         (
             (('literal', 'd'), ('literal', 'f'), ('literal', 'g')),
-            (('literal', 'd'), ('literal', 'f'), ('literal', 'g'), ('literal', 'g'))
+            (('literal', 'd'), ('literal', 'f'), ('literal', 'g'), ('literal', 'g')),
+            (('literal', 'd'), ('literal', 'f'), ('literal', 'g'), ('literal', 'a')),
+            (('literal', 'd'), ('literal', 'f'), ('literal', 'g'), ('literal', 'a'),
+             ('literal', 'g'), ('literal', 'g')),
+            (('literal', 'd'), ),
+            (('literal', 'a'), ('literal', 'b'))
         ) 
         ), )
-matcher('dfgagg', re8)
+re9 = (('literal', 'a'), ('star', (('literal', 'b'), )), ('literal', 'c'))
+matcher('ac', re9)
 
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
