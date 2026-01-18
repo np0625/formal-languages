@@ -252,7 +252,9 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
             case _:
                 print("Whoops NYI")
                 return (False, 999, 999)
-    return (True, saved_s_idx, s_idx - 1)
+    retval = (True, saved_s_idx, s_idx - 1)
+    print(f"returning true: {retval}")
+    return retval
                 
     
 def matcher(re, s):
@@ -318,8 +320,8 @@ re12 = (('star', (('literal', 'x'), ('literal', 'z'))), ('literal', 'a'))
 # matcher(re8, 'dfgaggg')
 # matcher(re9, 'ac')
 # matcher(re10, 'cdkdededededefdf')
-# matcher(re11, 'kdededededefdf') # WRONG: re11 isn't matching "kde..."!
-matcher(re12, 'xzxzxzaaaa')
+matcher(re11, 'kdededededefdf') # WRONG: re11 isn't matching "kde..."!
+# matcher(re12, 'aaaa')
 
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
