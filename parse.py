@@ -228,7 +228,7 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 found_any = False
                 max_end_idx = 0
                 for subexpr in cur_re_expr:
-                    found, start, end = matcher_aux(s, subexpr, saved_s_idx, 0, s_len, len(subexpr), mr)
+                    found, start, end = matcher_aux(s, subexpr, s_idx, 0, s_len, len(subexpr), mr)
                     if found:
                         max_end_idx = max([max_end_idx, end])
                     found_any = found_any or found
@@ -238,12 +238,14 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 else:
                     return (False, saved_s_idx, max_end_idx)
             case 'star':
-                print("begin star match")
+                print(f"begin star match: {cur_re_expr}")
                 found, start, end = matcher_aux(s, cur_re_expr, s_idx, 0, s_len, len(cur_re_expr), mr)                
                 if found:
+                    print(f"I found {s[s_idx:end+1]} ")
                     s_idx = end + 1
                     # try to match the same RE again
                 else:
+                    print("didn't find the *")
                     re_idx += 1
                     # match failed, move on to the next RE starting from where you were
                     # prior to trying to match the *-expr
@@ -253,10 +255,10 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
     return (True, saved_s_idx, s_idx - 1)
                 
     
-def matcher(s, re):
+def matcher(re, s):
     match_report = []
     retval, start_idx, end_idx = matcher_aux(s, re, 0, 0, len(s), len(re), match_report)
-    print(f"Result: {retval}; {start_idx} - {end_idx}")
+    print(f"Result: {retval}; {start_idx} - {end_idx}: {s[start_idx:end_idx+1]} in {s} for {re}")
 
 print("start")
 # re1 = "a(d|e)"
@@ -292,7 +294,32 @@ re8 = (('union',
         ) 
         ), )
 re9 = (('literal', 'a'), ('star', (('literal', 'b'), )), ('literal', 'c'))
-matcher('ac', re9)
+# re10 = (ab|cd)k(de)*
+re10 = (
+    ('union', (
+        (('literal', 'a'), ('literal', 'b')),
+        (('literal', 'c'), ('literal', 'd'))
+    )),
+    ('literal', 'k'),
+    ('star', (('literal', 'd'), ('literal', 'e')))
+)
+# re11 = (ab|cd|(mq)*)k(de)*
+re11 = (
+    ('union', (
+        (('literal', 'a'), ('literal', 'b')),
+        (('literal', 'c'), ('literal', 'd')),
+        (('star', (('literal', 'm'), ('literal', 'q'))), )
+    ), ),
+    ('literal', 'k'),
+    ('star', (('literal', 'd'), ('literal', 'e')))
+)
+re12 = (('star', (('literal', 'x'), )), ('literal', 'a'))
+re12 = (('star', (('literal', 'x'), ('literal', 'z'))), ('literal', 'a'))
+# matcher(re8, 'dfgaggg')
+# matcher(re9, 'ac')
+# matcher(re10, 'cdkdededededefdf')
+# matcher(re11, 'kdededededefdf') # WRONG: re11 isn't matching "kde..."!
+matcher(re12, 'xzxzxzaaaa')
 
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
