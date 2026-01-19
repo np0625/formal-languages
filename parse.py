@@ -153,17 +153,20 @@ re13 = (('star', (('literal', 'x'), ('literal', 'z'))), ('literal', 'a'))
 # matcher(re8, 'dfgaggg')
 # matcher(re9, 'ac')
 # matcher(re10, 'cdkdededededefdf')
-### matcher(re11, 'kdededededefdf') # WRONG: re11 isn't matching "kde..."!
+matcher(re11, 'kde') # WRONG: re11 isn't matching "kde..."!
 # matcher(re12, 'aaaa')
 
-re14 = (('literal', 'x'), ('union', ((('literal', 'a'), ), (('literal', 'b'), ))),
-        ('star', (('literal', 'z'), ('literal', 'a'), ('literal', 'p'))), ('literal', '9'))
-re14_testers = ('xazap9', 'xbzap9', 'xa9', 'xb9', 'xazapzap9', 'xbzapzapzapzapzap9')
-re14_results = [t[0] for t in [matcher(re14, x) for x in re14_testers ]]
-if False in re14_results:
-    print("PROBLEM!!!")
-else:
-    print("All re14 results passed")
+## re14 = x(a|b)(zap)*9
+## re14 = (('literal', 'x'), ('union', ((('literal', 'a'), ), (('literal', 'b'), ))),
+##         ('star', (('literal', 'z'), ('literal', 'a'), ('literal', 'p'))), ('literal', '9'))
+## re14_testers = ('xazap9', 'xbzap9', 'xa9', 'xb9', 'xazapzap9', 'xbzapzapzapzapzap9')
+## re14_results = [t[0] for t in [matcher(re14, x) for x in re14_testers ]]
+## if False in re14_results:
+##     print("PROBLEM!!!")
+## else:
+##     print("All re14 results passed")
+## 
+## print(matcher(re14, 'xazap9'))
 
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
