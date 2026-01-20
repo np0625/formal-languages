@@ -161,7 +161,7 @@ matcher(re11, 'kde') # WRONG: re11 isn't matching "kde..."!
 # matcher(re12, 'xxxxaaaa')
 
 # re14 = x(a|b)(zap)*9
-do_14 = False
+do_14 = True
 if do_14:
     re14 = (('literal', 'x'), ('union', ((('literal', 'a'), ), (('literal', 'b'), ))),
             ('star', (('literal', 'z'), ('literal', 'a'), ('literal', 'p'))), ('literal', '9'))
@@ -172,5 +172,7 @@ if do_14:
     else:
         print("All re14 results passed")
 
+re15 = (('star', (('literal', 'a'), )), ('literal', 'a'))
+print(matcher(re15, 'aaa'))
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
