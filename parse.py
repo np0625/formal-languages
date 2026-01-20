@@ -27,7 +27,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
     saved_s_idx = s_idx
-    chars_matched = 0
     logger.info(f"TOP: re: {re}; s: {s}")
     while re_idx < re_len:
         cur_re = re[re_idx]
@@ -41,7 +40,6 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 cur_char = s[s_idx]
                 if cur_char == cur_re_expr:
                     s_idx += 1
-                    chars_matched += 1
                     re_idx += 1
                     logger.debug(f"Literal match success '{cur_char}'")
                 else:
@@ -63,7 +61,6 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 if found_any:
                     logger.debug(f"Union match success for {cur_re_expr}")
                     s_idx += max_matched
-                    chars_matched += max_matched
                     re_idx += 1
                 else:
                     logger.debug(f"Union match fail for {cur_re_expr}")
@@ -76,7 +73,6 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 if found:
                     logger.debug(f"Star match success '{s[s_idx:(s_idx + matched)]}' for expr '{cur_re_expr}' ")
                     s_idx += matched
-                    chars_matched += matched
                     # try to match the same RE again
                 else:
                     logger.debug(f"Star match failed for {cur_re_expr}")
@@ -88,7 +84,7 @@ def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
                 retval = (False, 999, 999)
                 logger.debug(f"RETURN: {retval}")
                 return retval
-    retval = (True, saved_s_idx, chars_matched)
+    retval = (True, saved_s_idx, s_idx - saved_s_idx)
     logger.info(f"RETURNING FINAL TRUE: {retval}")
     return retval
 
@@ -157,7 +153,7 @@ re13 = (('star', (('literal', 'x'), ('literal', 'z'))), ('literal', 'a'))
 # matcher(re8, 'dfgaggg')
 # matcher(re9, 'ac')
 # matcher(re10, 'abkdedededede')
-matcher(re11, 'kde') # WRONG: re11 isn't matching "kde..."!
+matcher(re11, 'kde')
 # matcher(re12, 'xxxxaaaa')
 
 # re14 = x(a|b)(zap)*9
@@ -173,6 +169,6 @@ if do_14:
         print("All re14 results passed")
 
 re15 = (('star', (('literal', 'a'), )), ('literal', 'a'))
-print(matcher(re15, 'aaa'))
+# print(matcher(re15, 'aaa'))
 # Note cur behaviour is that trailing input is ignored once a match is found
 print("end")
