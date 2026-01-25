@@ -96,7 +96,7 @@ def matcher(re, s):
     return (retval, start_idx, n_matched)
 
 
-def test_runner(list_of_tests, fun):
+def run_tests(list_of_tests, fun):
     f = []
     for t in list_of_tests:
         logger.debug(f"TEST re: {t[0]} in '{t[1]}'")
@@ -104,9 +104,9 @@ def test_runner(list_of_tests, fun):
         if res != t[2]:
             f.append(t)
     if len(f) > 0:
-        print(f"🔥 🔥 🔥 Failures: {f}")
+        print(f"🔥 🔥 🔥 __result__: Failures: {f}")
     else:
-        print("🪷 All passed")
+        print("🪷 __result__: All passed")
 
 
 def m2(re, s):
@@ -119,9 +119,6 @@ def m2_aux(re, s, n):
     if not re:
         logger.debug(f"FUN success: RE EXHAUSTED, returning from top: {n}")
         return (True, n)
-    if not s:
-        logger.debug("FUN OUT OF CHARS - FAIL")
-        return (False, 0)
     # Begin work
     cur_re = re[0]
     cur_re_type = cur_re[0]
@@ -129,6 +126,9 @@ def m2_aux(re, s, n):
     match cur_re_type:
         case 'literal':
             logger.debug(f"literal: {cur_re_expr}")
+            if not s:
+                logger.debug("FUN OUT OF CHARS - FAIL")
+                return (False, 0)
             if s[0] == cur_re_expr:
                 logger.debug("literal matched")
                 return m2_aux(re[1:], s[1:], n + 1)
@@ -229,7 +229,7 @@ re_lu_t4 = (*re_union_t3,
                         (('literal', 'a'), ('literal', 'b'), ('literal', 'c'), ('literal', 'd'))), ),
             ('literal', 'c'), ('literal', 'd'), )
 # print(f"re_lu_t2{re_lu_t2}")
-# sys.exit()
+
 re_2_tests = (
     (re_lu_t0, 'kab9', True),
     (re_lu_t0, 'kabab9', False),
@@ -285,19 +285,10 @@ re_7_tests = (
     (re_star_1, 'aa', True),
     (re_star_1, 'aaaaaaaa', True),
     (re_star_1, 'aaaaaaaabbbb', True),
-
 )
 
-test_runner(re_0_tests, m2)
-test_runner(re_1_tests, m2)
-test_runner(re_2_tests, m2)
-test_runner(re_3_tests, m2)
-test_runner(re_4_tests, m2)
-test_runner(re_5_tests, m2)
-test_runner(re_6_tests, m2)
-test_runner(re_7_tests, m2)
 
-sys.exit()
+
 
 # re1 = "a(d|e)"
 re1 = (('literal', 'a'), ('union', (('literal', 'd'), ('literal', 'e'))))
@@ -305,16 +296,51 @@ re1 = (('literal', 'a'), ('union', (('literal', 'd'), ('literal', 'e'))))
 re2 = (('literal', 'f'), ('star', (('literal', 'q'), ('literal', 'p'))))
 # re3 = (ab)*(p|q)(x|y)*z
 re3 = (('star', (('literal', 'a'), ('literal', 'b'))),
-       ('union', (('literal', 'p'), ('literal', 'q'))),
-       ('star', (('union',
-                     (('literal', 'x'), ('literal', 'y'))), )),
-       ('literal', 'z')
+       ('union', (
+           (('literal', 'p'),),
+           (('literal', 'q'), )),
+        ),
+       ('star', (('union', (
+           (('literal', 'x'), ),
+           (('literal', 'y'), ),
+         )),)
+        ),
+       ('literal', 'z'),
        )
 # re4 = (x|y)*z
 re4 = (('star', (('union',
                      (('literal', 'x'), ('literal', 'y'))), )),
        ('literal', 'z')
        )
+
+# re2 = f(qp)*
+re_8_tests = (
+    (re2, 'fqp', True),
+    (re2, 'ffqp', True), # yes, because f matches f, and the remainder of the string is a non-match for (qp)*
+    (re2, 'qp', False),
+    (re2, 'f', True),
+    (re2, 'fa', True),
+)
+
+# re3 = (ab)*(p|q)(x|y)*z
+re_9_tests = (
+    (re3, 'abpxz', True),
+    (re3, 'abababqxxxyxyxyxyyyyyxxxxyyxyxyxxyz', True),
+    (re3, 'pz', True),
+)
+
+# run_tests(re_0_tests, m2)
+# run_tests(re_1_tests, m2)
+# run_tests(re_2_tests, m2)
+# run_tests(re_3_tests, m2)
+# run_tests(re_4_tests, m2)
+# run_tests(re_5_tests, m2)
+# run_tests(re_6_tests, m2)
+# run_tests(re_7_tests, m2)
+# run_tests(re_8_tests, m2)
+
+run_tests(re_9_tests, m2)
+sys.exit()
 # re5 = (ab)*
 re5 = (('star', (('literal', 'a'), ('literal', 'b'))), )
 # re6 = (a|b)
