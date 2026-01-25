@@ -136,17 +136,33 @@ def m2_aux(re, s, n):
                 return (False, 0)
         case 'union':
             logger.debug(f"union")
+            # Try matches in the order that subexpressions occur
             for subexpr in cur_re_expr:
                 found_sub, len_sub_match = m2_aux(subexpr, s, 0)
+                # If the subexpression matches, try the rest of the RE.
+                # If the remainder doesn't match, try again with the next subexpr
                 if found_sub:
                     found_rest, len_rest_match = m2_aux(re[1:], s[len_sub_match:], 0)
                     if found_rest:
-                        logger.debug(f"FUN: returning from union with n = {n + len_rest_match}")
-                        return (True, n + len_sub_match + len_rest_match)
+                        n_matched = n + len_sub_match + len_rest_match
+                        logger.debug(f"FUN: returning from union with n = {n_matched}")
+                        return (True, n_matched)
+            # If we reach here, it means the RE can't be matched with any of the subexprs
             return (False, 0)
         case 'star':
-            logger.debug(f"star")
-            return (False, 'NYI')
+            offsets = [0]
+            while True:
+                found, len_match = m2_aux(cur_re_expr, s[offsets[-1]:], 0)
+                if not found:
+                    break
+                offsets.append(offsets[-1] + len_match)
+            # Ok, matched as much as possible
+            while offsets:
+                offset = offsets.pop()
+                found, len_match = m2_aux(re[1:], s[offset:], 0)
+                if found:
+                    return (True, n + offset + len_match)
+            return (False, 0)
         case _:
             logger.debug(f"NYI: {cur_re_type}")
             return (False, 'NYI - unmatched case type')
@@ -246,7 +262,7 @@ re_5_tests = (
     (re_lu_t3, 'xabababacd', False),
     (re_lu_t3, 'xaabcd', False),
     (re_lu_t3, 'xaabcdcd', True),
-    (re_lu_t3, 'xaababcd', True),         
+    (re_lu_t3, 'xaababcd', True),
 )
 
 # re_lu_t4 = (ab|aa|a|b)ab(ab|abcd)cd
@@ -256,16 +272,30 @@ re_6_tests = (
     (re_lu_t4, 'bababcdcd', True),
     (re_lu_t4, 'aaababcd', True),
     (re_lu_t4, 'aababcdcd', True), # will match short (first 7)
-    
+
     )
 
-#test_runner(re_0_tests, m2)
-#test_runner(re_1_tests, m2)
-#test_runner(re_2_tests, m2)
-#test_runner(re_3_tests, m2)
-#test_runner(re_4_tests, m2)
-# test_runner(re_5_tests, m2)
+re_star_0 = (('star', (('literal', 'a'), )), ('literal', 'b'))
+re_star_1 = (('star', (('literal', 'a'), )), ('literal', 'a'))
+re_7_tests = (
+    (re_star_0, 'ab', True),
+    (re_star_0, 'aaaab', True),
+    (re_star_0, 'b', True),
+    (re_star_1, 'a', True),
+    (re_star_1, 'aa', True),
+    (re_star_1, 'aaaaaaaa', True),
+    (re_star_1, 'aaaaaaaabbbb', True),
+
+)
+
+test_runner(re_0_tests, m2)
+test_runner(re_1_tests, m2)
+test_runner(re_2_tests, m2)
+test_runner(re_3_tests, m2)
+test_runner(re_4_tests, m2)
+test_runner(re_5_tests, m2)
 test_runner(re_6_tests, m2)
+test_runner(re_7_tests, m2)
 
 sys.exit()
 
