@@ -339,7 +339,12 @@ re_9_tests = (
 # run_tests(re_7_tests, m2)
 # run_tests(re_8_tests, m2)
 
-run_tests(re_9_tests, m2)
+# run_tests(re_9_tests, m2)
+m2((
+    ('literal', 'x'),
+    ('star', (('literal', 'a'), ('literal', 'b'))),
+    ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), 
+), 'xabababababababababab')
 sys.exit()
 # re5 = (ab)*
 re5 = (('star', (('literal', 'a'), ('literal', 'b'))), )
