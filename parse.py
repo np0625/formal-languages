@@ -23,7 +23,7 @@ import sys
 # "re string" -> RE IR -> NFA
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
     saved_s_idx = s_idx
@@ -104,9 +104,9 @@ def test_runner(list_of_tests, fun):
         if res != t[2]:
             f.append(t)
     if len(f) > 0:
-        print(f"Failures: {f}")
+        print(f"🔥 🔥 🔥 Failures: {f}")
     else:
-        print("All passed")
+        print("🪷 All passed")
 
 
 def m2(re, s):
@@ -173,6 +173,12 @@ re_union_t2 = (('union', (
     (('literal', 'a'), ('literal', 'b')),
     (('literal', 'a'), ),
 )), )
+re_union_t3 = (('union', (
+    (('literal', 'a'), ('literal', 'b')),
+    (('literal', 'a'), ('literal', 'a')),
+    (('literal', 'a'), ),
+    (('literal', 'b'), ),
+    ), ), )
 
 re_1_tests = (
     (re_union_base, 'a', True),
@@ -198,7 +204,14 @@ re_lu_t0 = (('literal', 'k'), *re_union_t0, ('literal', '9'), )
 re_lu_t1 = (*re_union_t1, ('literal', 'b'), )
 # re_lu_t1 = (ab|a)b
 re_lu_t2 = (*re_union_t2, ('literal', 'b'), )
-
+# re_lu_t3 = x(ab|a)ab(ab|cd)cd
+re_lu_t3 = (('literal', 'x'), *re_union_t2, ('literal', 'a'), ('literal', 'b'), *re_union_t0, ('literal', 'c'), ('literal', 'd'), )
+# re_lu_t4 = (ab|aa|a|b)ab(ab|abcd)cd
+re_lu_t4 = (*re_union_t3,
+            ('literal', 'a'), ('literal', 'b'),
+            ('union', ((('literal', 'a'), ('literal', 'b')),
+                        (('literal', 'a'), ('literal', 'b'), ('literal', 'c'), ('literal', 'd'))), ),
+            ('literal', 'c'), ('literal', 'd'), )
 # print(f"re_lu_t2{re_lu_t2}")
 # sys.exit()
 re_2_tests = (
@@ -212,7 +225,6 @@ re_2_tests = (
     (re_lu_t0, 'cd9', False),
     (re_lu_t0, 'kabcd', False),
     (re_lu_t0, 'kab99', True),
-
 )
 
 re_3_tests = (
@@ -221,10 +233,39 @@ re_3_tests = (
     (re_lu_t1, 'aba', True), # Yes, because ab is a match, and the additional a is just left over input
     (re_lu_t1, 'aab', False),
 )
-# test_runner(re_0_tests, m2)
-# test_runner(re_1_tests, m2)
-# test_runner(re_2_tests, m2)
-test_runner(re_3_tests, m2)
+
+re_4_tests = (
+    (re_lu_t2, 'ab', True),
+    (re_lu_t2, 'abb', True),
+    (re_lu_t2, 'aba', True), # Yes, because ab is a match, and the additional a is just left over input
+    (re_lu_t2, 'aab', False),
+)
+
+re_5_tests = (
+    (re_lu_t3, 'xabababcd', True),
+    (re_lu_t3, 'xabababacd', False),
+    (re_lu_t3, 'xaabcd', False),
+    (re_lu_t3, 'xaabcdcd', True),
+    (re_lu_t3, 'xaababcd', True),         
+)
+
+# re_lu_t4 = (ab|aa|a|b)ab(ab|abcd)cd
+re_6_tests = (
+    (re_lu_t4, 'abababcd', True),
+    (re_lu_t4, 'aababcd', True),
+    (re_lu_t4, 'bababcdcd', True),
+    (re_lu_t4, 'aaababcd', True),
+    (re_lu_t4, 'aababcdcd', True), # will match short (first 7)
+    
+    )
+
+#test_runner(re_0_tests, m2)
+#test_runner(re_1_tests, m2)
+#test_runner(re_2_tests, m2)
+#test_runner(re_3_tests, m2)
+#test_runner(re_4_tests, m2)
+# test_runner(re_5_tests, m2)
+test_runner(re_6_tests, m2)
 
 sys.exit()
 
