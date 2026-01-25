@@ -292,10 +292,10 @@ re_7_tests = (
 
 # re1 = "a(d|e)"
 re1 = (('literal', 'a'), ('union', (('literal', 'd'), ('literal', 'e'))))
-# re2 = f(qp)*
-re2 = (('literal', 'f'), ('star', (('literal', 'q'), ('literal', 'p'))))
-# re3 = (ab)*(p|q)(x|y)*z
-re3 = (('star', (('literal', 'a'), ('literal', 'b'))),
+# re_star_2 = f(qp)*
+re_star_2 = (('literal', 'f'), ('star', (('literal', 'q'), ('literal', 'p'))))
+# re_star_3 = (ab)*(p|q)(x|y)*z
+re_star_3 = (('star', (('literal', 'a'), ('literal', 'b'))),
        ('union', (
            (('literal', 'p'),),
            (('literal', 'q'), )),
@@ -307,28 +307,38 @@ re3 = (('star', (('literal', 'a'), ('literal', 'b'))),
         ),
        ('literal', 'z'),
        )
+
+# re_star_4 = x(ab)*ababab
+re_star_4 = (
+    ('literal', 'x'),
+    ('star', (('literal', 'a'), ('literal', 'b'))),
+    ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), 
+)
 # re4 = (x|y)*z
 re4 = (('star', (('union',
                      (('literal', 'x'), ('literal', 'y'))), )),
        ('literal', 'z')
        )
 
-# re2 = f(qp)*
+# re_star_2 = f(qp)*
 re_8_tests = (
-    (re2, 'fqp', True),
-    (re2, 'ffqp', True), # yes, because f matches f, and the remainder of the string is a non-match for (qp)*
-    (re2, 'qp', False),
-    (re2, 'f', True),
-    (re2, 'fa', True),
+    (re_star_2, 'fqp', True),
+    (re_star_2, 'ffqp', True), # yes, because f matches f, and the remainder of the string is a non-match for (qp)*
+    (re_star_2, 'qp', False),
+    (re_star_2, 'f', True),
+    (re_star_2, 'fa', True),
 )
 
-# re3 = (ab)*(p|q)(x|y)*z
+# re_star_3 = (ab)*(p|q)(x|y)*z
 re_9_tests = (
-    (re3, 'abpxz', True),
-    (re3, 'abababqxxxyxyxyxyyyyyxxxxyyxyxyxxyz', True),
-    (re3, 'pz', True),
+    (re_star_3, 'abpxz', True),
+    (re_star_3, 'abababqxxxyxyxyxyyyyyxxxxyyxyxyxxyz', True),
+    (re_star_3, 'pz', True),
 )
 
+re_10_tests = (
+    (re_star_4, 'xabababababababababababab', True),
+)
 # run_tests(re_0_tests, m2)
 # run_tests(re_1_tests, m2)
 # run_tests(re_2_tests, m2)
@@ -338,13 +348,10 @@ re_9_tests = (
 # run_tests(re_6_tests, m2)
 # run_tests(re_7_tests, m2)
 # run_tests(re_8_tests, m2)
-
 # run_tests(re_9_tests, m2)
-m2((
-    ('literal', 'x'),
-    ('star', (('literal', 'a'), ('literal', 'b'))),
-    ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), 
-), 'xabababababababababab')
+run_tests(re_10_tests, m2)
+
+
 sys.exit()
 # re5 = (ab)*
 re5 = (('star', (('literal', 'a'), ('literal', 'b'))), )
