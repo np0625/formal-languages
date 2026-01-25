@@ -23,7 +23,7 @@ import sys
 # "re string" -> RE IR -> NFA
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
     saved_s_idx = s_idx
@@ -111,7 +111,7 @@ def test_runner(list_of_tests, fun):
 
 def m2(re, s):
     found, length = m2_aux(re, s, 0)
-    logger.info(f"Found: {found}! Length: {length} [{re} in '{s}']")
+    logger.info(f"Found: {found} {'✅' if found else '❌'}! Length: {length} [{re} in '{s}']")
     return (found, length)
 
 def m2_aux(re, s, n):
@@ -165,6 +165,15 @@ re_0_tests = (((('literal', 'a'), ), 'a', True,),
 
 re_union_base = (('union', ((('literal', 'a'), ), (('literal', 'b'), ))), )
 re_union_t0 = (('union', ((('literal', 'a'), ('literal', 'b')), (('literal', 'c'), ('literal', 'd')))), )
+re_union_t1 = (('union', (
+    (('literal', 'a'), ),
+    (('literal', 'a'), ('literal', 'b')),
+)), )
+re_union_t2 = (('union', (
+    (('literal', 'a'), ('literal', 'b')),
+    (('literal', 'a'), ),
+)), )
+
 re_1_tests = (
     (re_union_base, 'a', True),
     (re_union_base, 'b', True),
@@ -183,8 +192,14 @@ re_1_tests = (
     (re_union_t0, 'cb', False),
 )
 
-re_lu_t0 = (('literal', 'k'), *re_union_t0, ('literal', '9'))
-print(f"re_lu_t0{re_lu_t0}")
+# re_lu_t0 = k(ab|cd)9
+re_lu_t0 = (('literal', 'k'), *re_union_t0, ('literal', '9'), )
+# re_lu_t1 = (a|ab)b
+re_lu_t1 = (*re_union_t1, ('literal', 'b'), )
+# re_lu_t1 = (ab|a)b
+re_lu_t2 = (*re_union_t2, ('literal', 'b'), )
+
+# print(f"re_lu_t2{re_lu_t2}")
 # sys.exit()
 re_2_tests = (
     (re_lu_t0, 'kab9', True),
@@ -200,9 +215,17 @@ re_2_tests = (
 
 )
 
+re_3_tests = (
+    (re_lu_t1, 'ab', True),
+    (re_lu_t1, 'abb', True),
+    (re_lu_t1, 'aba', True), # Yes, because ab is a match, and the additional a is just left over input
+    (re_lu_t1, 'aab', False),
+)
 # test_runner(re_0_tests, m2)
 # test_runner(re_1_tests, m2)
-test_runner(re_2_tests, m2)
+# test_runner(re_2_tests, m2)
+test_runner(re_3_tests, m2)
+
 sys.exit()
 
 # re1 = "a(d|e)"
