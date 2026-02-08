@@ -125,17 +125,18 @@ def m2_aux(re, s, n):
     cur_re_expr = cur_re[1]
     match cur_re_type:
         case 'literal':
-            logger.debug(f"literal: {cur_re_expr}")
+            logger.debug(f"LITERAL: {cur_re_expr}")
             if not s:
-                logger.debug("FUN OUT OF CHARS - FAIL")
+                logger.debug("  LITERAL: FUN OUT OF CHARS - FAIL")
                 return (False, 0)
             if s[0] == cur_re_expr:
-                logger.debug("literal matched")
+                logger.debug("  LITERAL matched")
                 return m2_aux(re[1:], s[1:], n + 1)
             else:
+                logger.debug(f"  LITERAL not matched: got {s[0]}")
                 return (False, 0)
         case 'union':
-            logger.debug(f"union")
+            logger.debug(f"UNION: {cur_re_expr} ")
             # Try matches in the order that subexpressions occur
             for subexpr in cur_re_expr:
                 found_sub, len_sub_match = m2_aux(subexpr, s, 0)
@@ -150,18 +151,29 @@ def m2_aux(re, s, n):
             # If we reach here, it means the RE can't be matched with any of the subexprs
             return (False, 0)
         case 'star':
+            logger.debug(f"STAR: {cur_re_expr}")
+            logger.debug(f"  STAR: starting greedy matching")
             offsets = [0]
             while True:
                 found, len_match = m2_aux(cur_re_expr, s[offsets[-1]:], 0)
-                if not found:
+                if not found or len_match == 0:
+                    logger.debug(f"  STAR: not found at '{s[offsets[-1]:]}'")
                     break
-                offsets.append(offsets[-1] + len_match)
+                else:
+                    logger.debug(f"  STAR: found at '{s[offsets[-1]:]}'")
+                    offsets.append(offsets[-1] + len_match)
+                    logger.debug(f"  STAR: offsets so far: {offsets}")
             # Ok, matched as much as possible
+            logger.debug(f"  STAR: starting post-greedy matching phase w/ offset array: {offsets}")
             while offsets:
                 offset = offsets.pop()
                 found, len_match = m2_aux(re[1:], s[offset:], 0)
                 if found:
+                    logger.debug(f"  STAR: matched remaining RE {re[1:]} against '{s[offset:]}'")
                     return (True, n + offset + len_match)
+                else:
+                    logger.debug(f"  STAR: couldn't match remaining RE {re[1:]} against '{s[offset:]}'")
+            logger.debug(f"  STAR: not able to match rest of RE {re[1:]} against '{s}'")
             return (False, 0)
         case _:
             logger.debug(f"NYI: {cur_re_type}")
@@ -339,20 +351,68 @@ re_9_tests = (
 re_10_tests = (
     (re_star_4, 'xabababababababababababab', True),
 )
-# run_tests(re_0_tests, m2)
-# run_tests(re_1_tests, m2)
-# run_tests(re_2_tests, m2)
-# run_tests(re_3_tests, m2)
-# run_tests(re_4_tests, m2)
-# run_tests(re_5_tests, m2)
-# run_tests(re_6_tests, m2)
-# run_tests(re_7_tests, m2)
-# run_tests(re_8_tests, m2)
-# run_tests(re_9_tests, m2)
+
+# p01 = a|ab|cd|(mq)*
+re_big_p01 = (('union', (
+    (('literal', 'a')),
+    (('literal', 'a'), ('literal', 'b')),
+    (('literal', 'c'), ('literal', 'd')),
+    (('star', (('literal', 'm'), ('literal', 'q'))), ),
+)), )
+# p02 = ((map|pam)*|(human|room)*)*
+re_big_p02_lit01 = (('literal', 'm'), ('literal', 'a'), ('literal', 'p'))
+re_big_p02_lit02 = (('literal', 'p'), ('literal', 'a'), ('literal', 'm'))
+re_big_p03_lit01 = (('literal', 'h'), ('literal', 'u'), ('literal', 'm'), ('literal', 'a'), ('literal', 'n'))
+re_big_p03_lit02 = (('literal', 'r'), ('literal', 'o'), ('literal', 'o'), ('literal', 'm'))
+
+re_big_p04_lit = (('literal', 'm'), ('literal', 'a'), ('literal', 'p'), ('literal', 'p'), ('literal', 'a'), ('literal', 'm'), ('literal', 'h'), ('literal', 'u'), ('literal', 'm'), ('literal', 'a'), ('literal', 'n'), ('literal', 'r'), ('literal', 'o'), ('literal', 'o'), ('literal', 'm'))
+
+
+re_big_p02 = (('star',
+               (('union', ((('star', (('union', (re_big_p02_lit01, re_big_p02_lit02)), )), ),
+                           (('star', (('union', (re_big_p03_lit01, re_big_p03_lit02)), )), )),
+                 ),
+                )), )
+
+rex_big_p02 = (('star',
+               (('union', ((('star', (('union', (re_big_p03_lit01, re_big_p03_lit02)), )), ),
+                           (('star', (('union', (re_big_p02_lit01, re_big_p02_lit02)), )), )),
+                 ),
+                )), )
+
+
+
+re_s2 = (('star', (('literal', 'a'), )), )
+re_s2_double = (('star', re_s2), )
+
+run_tests(re_0_tests, m2)
+run_tests(re_1_tests, m2)
+run_tests(re_2_tests, m2)
+run_tests(re_3_tests, m2)
+run_tests(re_4_tests, m2)
+run_tests(re_5_tests, m2)
+run_tests(re_6_tests, m2)
+run_tests(re_7_tests, m2)
+run_tests(re_8_tests, m2)
+run_tests(re_9_tests, m2)
 run_tests(re_10_tests, m2)
-
-
 sys.exit()
+# m2(re_big_p01, 'mqmqmqmqmq')
+# m2(re_big_p02_lit01, 'map')
+#m2(re_big_p02_lit02, 'pam')
+#m2(re_big_p03_lit01, 'human')
+#m2(re_big_p03_lit02, 'room')
+#m2(re_big_p04_lit, 'mappamhumanroom')
+# m2(re_big_p02, 'map')
+
+
+
+while True:
+    s = input("input: ").strip()
+    m2(rex_big_p02, s)
+sys.exit()
+
+
 # re5 = (ab)*
 re5 = (('star', (('literal', 'a'), ('literal', 'b'))), )
 # re6 = (a|b)
