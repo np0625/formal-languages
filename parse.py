@@ -25,76 +25,54 @@ import sys
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-def matcher_aux(s, re, s_idx, re_idx, s_len, re_len, mr):
-    saved_s_idx = s_idx
-    logger.info(f"TOP: re: {re}; s: {s}")
-    while re_idx < re_len:
-        cur_re = re[re_idx]
-        cur_re_type = cur_re[0]
-        cur_re_expr = cur_re[1]
-        match cur_re_type:
-            case 'literal':
-                logger.info('BEGIN literal match')
-                if s_idx >= s_len:
-                    return (False, s_idx, 0)
-                cur_char = s[s_idx]
-                if cur_char == cur_re_expr:
-                    s_idx += 1
-                    re_idx += 1
-                    logger.debug(f"Literal match success '{cur_char}'")
+
+def match(re, s):
+    found, length = match_aux(re, s, 0)
+    return (found, length)
+
+def match_aux(re, s, n):
+    if not re:
+        return (True, n)
+    cur_re = re[0]
+    cur_re_type = cur_re[0]
+    cur_re_expr = cur_re[1]
+    match cur_re_type:
+        case 'literal':
+            if not s:
+                return (False, 0)
+            if s[0] == cur_re_expr:
+                return match_aux(re[1:], s[1:], n + 1)
+            else:
+                return (False, 0)
+        case 'union':
+            for subexpr in cur_re_expr: # Try matches in the order that subexpressions occur
+                found_sub, len_sub_match = match_aux(subexpr, s, 0)
+                # If the subexpression matches, try the rest of the RE.
+                # If the remainder doesn't match, try again with the next subexpr
+                if found_sub:
+                    found_rest, len_rest_match = match_aux(re[1:], s[len_sub_match:], 0)
+                    if found_rest:
+                        n_matched = n + len_sub_match + len_rest_match
+                        return (True, n_matched)
+            # If we reach here, it means the RE can't be matched with any of the subexprs
+            return (False, 0)
+        case 'star':
+            offsets = [0]
+            while True:
+                found, len_match = match_aux(cur_re_expr, s[offsets[-1]:], 0)
+                if not found or len_match == 0:
+                    break
                 else:
-                    logger.debug(f"Literal match fail regex '{cur_re_expr}' vs char '{cur_char}'")
-                    retval = (False, s_idx, 0)
-                    logger.debug(f"RETURN: {retval}")
-                    return retval
-            case 'union':
-                logger.info(f"BEGIN union match for {cur_re_expr}")
-                found_any = False
-                max_matched = 0
-                for subexpr in cur_re_expr:
-                    logger.debug(f"trying union subexpr {subexpr}")
-                    found, start, matched = matcher_aux(s, subexpr, s_idx, 0, s_len, len(subexpr), mr)
-                    if found:
-                        logger.debug(f"found union subexpr {subexpr}")
-                        max_matched = max([max_matched, matched])
-                    found_any = found_any or found
-                if found_any:
-                    logger.debug(f"Union match success for {cur_re_expr}")
-                    s_idx += max_matched
-                    re_idx += 1
-                else:
-                    logger.debug(f"Union match fail for {cur_re_expr}")
-                    retval = (False, saved_s_idx, 0)
-                    logger.debug(f"RETURNING: {retval}")
-                    return retval
-            case 'star':
-                logger.info(f"BEGIN star match: {cur_re_expr}")
-                found, start, matched = matcher_aux(s, cur_re_expr, s_idx, 0, s_len, len(cur_re_expr), mr)
+                    offsets.append(offsets[-1] + len_match)
+            while offsets:
+                offset = offsets.pop()
+                found, len_match = match_aux(re[1:], s[offset:], 0)
                 if found:
-                    logger.debug(f"Star match success '{s[s_idx:(s_idx + matched)]}' for expr '{cur_re_expr}' ")
-                    s_idx += matched
-                    # try to match the same RE again
+                    return (True, n + offset + len_match)
                 else:
-                    logger.debug(f"Star match failed for {cur_re_expr}")
-                    re_idx += 1
-                    # match failed, move on to the next RE starting from where you were
-                    # prior to trying to match the *-expr
-            case _:
-                logger.info("Whoops NYI")
-                retval = (False, 999, 999)
-                logger.debug(f"RETURN: {retval}")
-                return retval
-    retval = (True, saved_s_idx, s_idx - saved_s_idx)
-    logger.info(f"RETURNING FINAL TRUE: {retval}")
-    return retval
-
-
-def matcher(re, s):
-    match_report = []
-    retval, start_idx, n_matched = matcher_aux(s, re, 0, 0, len(s), len(re), match_report)
-    print(f"Result: {retval}; start: {start_idx} for {n_matched}: {s[start_idx:(start_idx + n_matched)]} in {s} for {re}")
-    return (retval, start_idx, n_matched)
-
+            return (False, 0)
+        case _:
+            raise Exception(f"RE type {cur_re_type} not implemented")
 
 def run_tests(list_of_tests, fun):
     f = []
@@ -324,7 +302,7 @@ re_star_3 = (('star', (('literal', 'a'), ('literal', 'b'))),
 re_star_4 = (
     ('literal', 'x'),
     ('star', (('literal', 'a'), ('literal', 'b'))),
-    ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), 
+    ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'), ('literal', 'a'), ('literal', 'b'),
 )
 # re4 = (x|y)*z
 re4 = (('star', (('union',
@@ -380,23 +358,25 @@ rex_big_p02 = (('star',
                  ),
                 )), )
 
-
+re_simple_union = (('union', (re_big_p02_lit01, re_big_p03_lit02)), )
+re_star_of_union = (('star', re_simple_union), )
 
 re_s2 = (('star', (('literal', 'a'), )), )
 re_s2_double = (('star', re_s2), )
+re_s2_triple = (('star', re_s2_double), )
 
-run_tests(re_0_tests, m2)
-run_tests(re_1_tests, m2)
-run_tests(re_2_tests, m2)
-run_tests(re_3_tests, m2)
-run_tests(re_4_tests, m2)
-run_tests(re_5_tests, m2)
-run_tests(re_6_tests, m2)
-run_tests(re_7_tests, m2)
-run_tests(re_8_tests, m2)
-run_tests(re_9_tests, m2)
-run_tests(re_10_tests, m2)
-sys.exit()
+# run_tests(re_0_tests, m2)
+# run_tests(re_1_tests, m2)
+# run_tests(re_2_tests, m2)
+# run_tests(re_3_tests, m2)
+# run_tests(re_4_tests, m2)
+# run_tests(re_5_tests, m2)
+# run_tests(re_6_tests, m2)
+# run_tests(re_7_tests, m2)
+# run_tests(re_8_tests, m2)
+# run_tests(re_9_tests, m2)
+# run_tests(re_10_tests, m2)
+# sys.exit()
 # m2(re_big_p01, 'mqmqmqmqmq')
 # m2(re_big_p02_lit01, 'map')
 #m2(re_big_p02_lit02, 'pam')
@@ -409,9 +389,9 @@ sys.exit()
 
 while True:
     s = input("input: ").strip()
-    m2(rex_big_p02, s)
-sys.exit()
+    m2(re_star_of_union, s)
 
+sys.exit()
 
 # re5 = (ab)*
 re5 = (('star', (('literal', 'a'), ('literal', 'b'))), )
