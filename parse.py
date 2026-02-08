@@ -69,7 +69,6 @@ def match_aux(re, s, n):
                 found, len_match = match_aux(re[1:], s[offset:], 0)
                 if found:
                     return (True, n + offset + len_match)
-                else:
             return (False, 0)
         case _:
             raise Exception(f"RE type {cur_re_type} not implemented")
